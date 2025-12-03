@@ -1,0 +1,288 @@
+version: '3.8'
+
+services:
+  # Authentication Services
+  auth-service:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    container_name: adan-auth
+    environment:
+      - NODE_ENV=production
+      - AUTH_PORT=3001
+      - ABJAD_ENTROPY_ENABLED=true
+      - BIOMETRIC_IDP_ENABLED=true
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./auth:/app
+      - /app/node_modules
+    networks:
+      - adan-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api/gateway
+      dockerfile: Dockerfile
+    container_name: adan-gateway
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_PORT=3002
+      - GENESIS_CORE_URL=http://localhost:8000
+      - QURANLAB_API_URL=${QURANLAB_API_URL}
+      - MOBILE_SYNC_ENABLED=true
+      - RATE_LIMIT_REQUESTS=100
+      - RATE_LIMIT_WINDOW=60000
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./api/gateway:/app
+      - /app/node_modules
+    networks:
+      - adan-network
+    depends_on:
+      - auth-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Webhook Service
+  webhook-service:
+    build:
+      context: ./api/webhooks
+      dockerfile: Dockerfile
+    container_name: adan-webhooks
+    environment:
+      - NODE_ENV=production
+      - WEBHOOK_PORT=3003
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - AUTO_DEPLOY_ENABLED=true
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./api/webhooks:/app
+      - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - adan-network
+    restart: unless-stopped
+
+  # Firebase Storage Proxy
+  firebase-proxy:
+    build:
+      context: ./storage/firebase
+      dockerfile: Dockerfile
+    container_name: adan-firebase
+    environment:
+      - NODE_ENV=production
+      - FIREBASE_PORT=3004
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN}
+      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./storage/firebase:/app
+      - /app/node_modules
+    networks:
+      - adan-network
+    restart: unless-stopped
+
+  # IPFS Storage Node
+  ipfs-node:
+    image: ipfs/go-ipfs:latest
+    container_name: adan-ipfs
+    environment:
+      - IPFS_PROFILE=server
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+      - "8080:8080"
+    volumes:
+      - ipfs-data:/data/ipfs
+    networks:
+      - adan-network
+    restart: unless-stopped
+    command: >
+      sh -c "ipfs init --profile server &&
+             ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '[\"*\"]' &&
+             ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '[\"GET\", \"POST\"]' &&
+             ipfs daemon --migrate=true"
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: adan-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - adan-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: adan-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - adan-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Loki Log Aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: adan-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    networks:
+      - adan-network
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+
+  # Promtail Log Collector
+  promtail:
+    image: grafana/promtail:latest
+    container_name: adan-promtail
+    volumes:
+      - ./monitoring/loki/promtail-config.yml:/etc/promtail/config.yml
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - adan-network
+    depends_on:
+      - loki
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: adan-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/cloud.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - nginx-logs:/var/log/nginx
+    networks:
+      - adan-network
+    depends_on:
+      - auth-service
+      - api-gateway
+      - webhook-service
+      - firebase-proxy
+      - grafana
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache (for session management and rate limiting)
+  redis:
+    image: redis:alpine
+    container_name: adan-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - adan-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-adanredis}
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: adan-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - adan-network
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+
+  # Cadvisor for container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: adan-cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - adan-network
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+
+networks:
+  adan-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  ipfs-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  loki-data:
+    driver: local
+  redis-data:
+    driver: local
+  nginx-logs:
+    driver: local
