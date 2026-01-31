@@ -1,0 +1,3 @@
+file_id,surah,ayah,qiraat,reciter_type,audio_file,label_file,is_correct
+001_001_hafs,1,1,hafs,expert,001_001_hafs_correct.mp3,001_001_hafs_correct.json,1
+001_001_hafs_mistake,1,1,hafs,student,001_001_hafs_mistake_idgham.mp3,001_001_hafs_mistake_idgham.json,0
