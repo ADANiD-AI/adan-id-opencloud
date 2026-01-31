@@ -1,0 +1,4 @@
+[PLACEHOLDER]
+Actual model file is hosted on Hugging Face:
+https://huggingface.co/ADANiD-AI/quranlab-tajweed-scoring
+Download using huggingface_hub library.
