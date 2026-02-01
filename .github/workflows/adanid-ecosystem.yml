@@ -47,12 +47,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI        run: |
+      - name: Setup Hugging Face CLI and upload dataset        run: |
           pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
-
-      - name: Upload dataset
-        run: |
           huggingface-cli upload ADANiD/Quranlab-islamic-dataset \
             datasets/quranlab-islamic-dataset \
             ./ \
@@ -68,20 +65,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI
+      - name: Setup Hugging Face CLI and upload models
         run: |
           pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
-
-      - name: Upload Quranlab model
-        run: |
           huggingface-cli upload ADANiD/Quranlab \
             models/quranlab/README.md \
             ./ \
             --repo-type model
-
-      - name: Upload Quranlab-AI model
-        run: |
           huggingface-cli upload ADANiD/Quranlab-AI \
             models/quranlab-ai/README.md \
             ./ \
@@ -96,19 +87,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Kaggle CLI
+
+      - name: Setup Kaggle CLI and update dataset
         run: |
           pip install kaggle
           mkdir -p ~/.kaggle
           echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
-
-      - name: Update Kaggle dataset
-        run: |
           kaggle datasets version \
             -p nooreabjad-dataset \
             -m "Auto-update: $(date)"
-
   # =============================================================================
   # 5. UPDATE SUPABASE SCHEMA
   # =============================================================================
@@ -119,12 +107,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Supabase CLI
+      - name: Install Supabase CLI and deploy schema
         run: |
           npm install -g supabase
-
-      - name: Deploy database schema
-        run: |
           supabase db push \
             --project-ref wcrchcdqaikhrhqzxfcy \
             --api-key ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -139,13 +124,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI
+      - name: Deploy Hugging Face Space
         run: |
           pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
-
-      - name: Deploy Space
-        run: |          huggingface-cli upload ADANiD/quranlab-demo \
+          huggingface-cli upload ADANiD/quranlab-demo \
             spaces/quranlab-demo \
             ./ \
             --repo-type space
