@@ -1,21 +1,17 @@
-# Core dependencies
+# AI Core
 torch>=2.0
 transformers>=4.35
 librosa>=0.10
 soundfile>=0.12
 huggingface-hub>=0.20
 
-# Database
+# Database & APIs
 supabase>=2.0
+kaggle>=1.6
+
+# Data Processing
+numpy>=1.21
+pandas>=1.3
 
 # Testing
 pytest>=7.0
-
-# Kaggle
-kaggle>=1.6
-
-# Utilities
-numpy>=1.21
-pandas>=1.3
-matplotlib>=3.5
-seaborn>=0.11
