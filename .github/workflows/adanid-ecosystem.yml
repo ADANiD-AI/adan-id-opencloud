@@ -49,7 +49,7 @@ jobs:
 
       - name: Setup Hugging Face CLI        run: |
           pip install huggingface-hub
-          huggingface-cli login --token $HF_TOKEN
+          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
 
       - name: Upload dataset
         run: |
@@ -71,7 +71,7 @@ jobs:
       - name: Setup Hugging Face CLI
         run: |
           pip install huggingface-hub
-          huggingface-cli login --token $HF_TOKEN
+          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
 
       - name: Upload Quranlab model
         run: |
@@ -100,7 +100,7 @@ jobs:
         run: |
           pip install kaggle
           mkdir -p ~/.kaggle
-          echo '{"username":"'$KAGGLE_USERNAME'","key":"'$KAGGLE_KEY'"}' > ~/.kaggle/kaggle.json
+          echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
       - name: Update Kaggle dataset
@@ -127,7 +127,7 @@ jobs:
         run: |
           supabase db push \
             --project-ref wcrchcdqaikhrhqzxfcy \
-            --api-key $SUPABASE_SERVICE_ROLE_KEY
+            --api-key ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   # =============================================================================
   # 6. DEPLOY HUGGING FACE SPACE
@@ -142,7 +142,7 @@ jobs:
       - name: Setup Hugging Face CLI
         run: |
           pip install huggingface-hub
-          huggingface-cli login --token $HF_TOKEN
+          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
 
       - name: Deploy Space
         run: |          huggingface-cli upload ADANiD/quranlab-demo \
@@ -160,4 +160,3 @@ jobs:
       - name: Send success notification
         run: |
           echo "✅ ADANiD Ecosystem auto-deployed successfully!"
-          # Add email/Slack notification if needed
