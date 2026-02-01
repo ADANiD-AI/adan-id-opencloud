@@ -14,9 +14,6 @@ env:
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
 jobs:
-  # =============================================================================
-  # 1. BUILD & TEST
-  # =============================================================================
   build-test:
     runs-on: ubuntu-latest
     steps:
@@ -37,9 +34,6 @@ jobs:
         run: |
           python -m pytest tests/ --verbose
 
-  # =============================================================================
-  # 2. UPDATE HUGGING FACE DATASET
-  # =============================================================================
   update-hf-dataset:
     needs: build-test
     runs-on: ubuntu-latest
@@ -47,17 +41,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI and upload dataset        run: |
+      - name: Setup Hugging Face CLI and upload dataset
+        run: |
           pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
           huggingface-cli upload ADANiD/Quranlab-islamic-dataset \
             datasets/quranlab-islamic-dataset \
-            ./ \
-            --repo-type dataset
+            ./ \            --repo-type dataset
 
-  # =============================================================================
-  # 3. UPDATE HUGGING FACE MODELS
-  # =============================================================================
   update-hf-models:
     needs: update-hf-dataset
     runs-on: ubuntu-latest
@@ -78,9 +69,6 @@ jobs:
             ./ \
             --repo-type model
 
-  # =============================================================================
-  # 4. UPDATE KAGGLE DATASET
-  # =============================================================================
   update-kaggle:
     needs: update-hf-models
     runs-on: ubuntu-latest
@@ -97,9 +85,7 @@ jobs:
           kaggle datasets version \
             -p nooreabjad-dataset \
             -m "Auto-update: $(date)"
-  # =============================================================================
-  # 5. UPDATE SUPABASE SCHEMA
-  # =============================================================================
+
   update-supabase:
     needs: update-kaggle
     runs-on: ubuntu-latest
@@ -110,13 +96,9 @@ jobs:
       - name: Install Supabase CLI and deploy schema
         run: |
           npm install -g supabase
-          supabase db push \
-            --project-ref wcrchcdqaikhrhqzxfcy \
+          supabase db push \            --project-ref wcrchcdqaikhrhqzxfcy \
             --api-key ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-  # =============================================================================
-  # 6. DEPLOY HUGGING FACE SPACE
-  # =============================================================================
   deploy-hf-space:
     needs: update-supabase
     runs-on: ubuntu-latest
@@ -133,9 +115,6 @@ jobs:
             ./ \
             --repo-type space
 
-  # =============================================================================
-  # 7. NOTIFICATION
-  # =============================================================================
   notify:
     needs: deploy-hf-space
     runs-on: ubuntu-latest
