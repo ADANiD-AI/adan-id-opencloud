@@ -1,0 +1,20 @@
+# Multimodal QuranLab Merge Configuration
+models:
+  - model: tarteel-ai/whisper-base-ar-quran
+    weight: 0.4
+    parameters:
+      - name: encoder
+        weight: 0.6
+  - model: Habib-HF/tarbiyah-ai-v1-1
+    weight: 0.3
+    parameters:
+      - name: classifier
+        weight: 0.5
+  - model: ADANiD/Quranlab-AI
+    weight: 0.3
+    parameters:
+      - name: encoder
+        weight: 0.4
+
+merge_method: linear
+dtype: float16
