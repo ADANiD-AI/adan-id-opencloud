@@ -31,16 +31,16 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install huggingface-hub kaggle supabase mergekit
+          pip install huggingface-hub kaggle supabase mergekit torch transformers librosa soundfile
 
       - name: Run tests
         run: |
           python -m pytest tests/ --verbose
 
   # =============================================================================
-  # 2. MERGE MODELS WITH MERGEKIT
+  # 2. MERGE MULTIMODAL MODEL
   # =============================================================================
-  merge-models:
+  merge-multimodal:
     needs: build-test
     runs-on: ubuntu-latest
     steps:
@@ -55,32 +55,51 @@ jobs:
         run: |
           pip install mergekit torch transformers
 
+      - name: Merge Multimodal QuranLab
+        run: |
+          mergekit-yaml models/mergekit-multimodal.yaml ./merged-multimodal --cuda
+
+      - name: Upload merged model to Hugging Face
+        run: |
+          pip install huggingface-hub
+          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
+          huggingface-cli upload ADANiD/multimodal-quranlab \
+            ./merged-multimodal \
+            ./ \
+            --repo-type model
+
+  # =============================================================================
+  # 3. MERGE QURANLAB-AI MODEL
+  # =============================================================================
+  merge-quranlab-ai:
+    needs: merge-multimodal
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Merge Quranlab-AI models
         run: |
           mergekit-yaml models/mergekit.yaml ./merged-quranlab-ai --cuda
 
       - name: Upload merged model to Hugging Face
         run: |
-          pip install huggingface-hub
-          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
           huggingface-cli upload ADANiD/Quranlab-AI \
             ./merged-quranlab-ai \
             ./ \
             --repo-type model
 
   # =============================================================================
-  # 3. UPDATE HUGGING FACE DATASET
+  # 4. UPDATE HUGGING FACE DATASET
   # =============================================================================
   update-hf-dataset:
-    needs: merge-models
+    needs: merge-quranlab-ai
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout code        uses: actions/checkout@v4
 
       - name: Setup Hugging Face CLI
         run: |
-          pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
 
       - name: Upload dataset
@@ -91,18 +110,14 @@ jobs:
             --repo-type dataset
 
   # =============================================================================
-  # 4. UPDATE HUGGING FACE MODELS (QuranLab Core)
+  # 5. UPDATE HUGGING FACE MODELS (QuranLab Core)
   # =============================================================================
   update-hf-models:
     needs: update-hf-dataset
     runs-on: ubuntu-latest
-    steps:      - name: Checkout code
+    steps:
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Hugging Face CLI
-        run: |
-          pip install huggingface-hub
-          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
 
       - name: Upload Quranlab model
         run: |
@@ -112,7 +127,7 @@ jobs:
             --repo-type model
 
   # =============================================================================
-  # 5. UPLOAD DEMO FILES TO HUGGING FACE
+  # 6. UPLOAD DEMO FILES TO HUGGING FACE
   # =============================================================================
   upload-demo-files:
     needs: update-hf-models
@@ -121,15 +136,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI
+      - name: Upload multimodal demo notebook
         run: |
-          pip install huggingface-hub
-          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
+          huggingface-cli upload ADANiD/multimodal-quranlab \
+            notebooks/multimodal-quranlab-demo.ipynb \
+            ./ \
+            --repo-type model
 
-      - name: Upload demo notebook
+      - name: Upload Quranlab-AI demo notebook
         run: |
-          huggingface-cli upload ADANiD/Quranlab-AI \
-            notebooks/quranlab-ai-demo.ipynb \
+          huggingface-cli upload ADANiD/Quranlab-AI \            notebooks/quranlab-ai-demo.ipynb \
             ./ \
             --repo-type model
 
@@ -143,12 +159,9 @@ jobs:
             demos/requirements.txt \
             ./ \
             --repo-type space
-          huggingface-cli upload ADANiD/quranlab-demo \
-            demos/README.md \
-            ./ \            --repo-type space
 
   # =============================================================================
-  # 6. UPDATE KAGGLE DATASET
+  # 7. UPDATE KAGGLE RESOURCES
   # =============================================================================
   update-kaggle:
     needs: upload-demo-files
@@ -168,17 +181,20 @@ jobs:
         run: |
           kaggle datasets version \
             -p nooreabjad-dataset \
-            -m "Auto-update: $(date)"
+            -m "feat: multimodal integration $(date)"
+
+      - name: Update Kaggle notebook
+        run: |
+          kaggle kernels push -p kaggle/nooreabjad-dataset/notebooks/
 
   # =============================================================================
-  # 7. UPDATE SUPABASE SCHEMA
+  # 8. UPDATE SUPABASE SCHEMA
   # =============================================================================
   update-supabase:
     needs: update-kaggle
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout code        uses: actions/checkout@v4
 
       - name: Install Supabase CLI
         run: |
@@ -191,25 +207,24 @@ jobs:
             --api-key ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   # =============================================================================
-  # 8. DEPLOY HUGGING FACE SPACE
+  # 9. DEPLOY HUGGING FACE SPACE
   # =============================================================================
   deploy-hf-space:
-    needs: update-supabase    runs-on: ubuntu-latest
+    needs: update-supabase
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Deploy Hugging Face Space
         run: |
-          pip install huggingface-hub
-          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
           huggingface-cli upload ADANiD/quranlab-demo \
             spaces/quranlab-demo \
             ./ \
             --repo-type space
 
   # =============================================================================
-  # 9. NOTIFICATION
+  # 10. NOTIFICATION
   # =============================================================================
   notify:
     needs: deploy-hf-space
@@ -218,6 +233,6 @@ jobs:
       - name: Send success notification
         run: |
           echo "✅ ADANiD Ecosystem auto-deployed successfully!"
-          echo "✅ Models merged with MergeKit"
-          echo "✅ Demo files uploaded"
-          echo "✅ All platforms updated"
+          echo "✅ Multimodal QuranLab deployed"
+          echo "✅ All Kaggle resources updated"
+          echo "✅ All platforms synchronized"
