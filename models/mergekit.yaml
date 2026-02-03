@@ -1,0 +1,30 @@
+# QuranLab-AI Model Merge Configuration
+models:
+  - model: google/electra-base-discriminator
+    weight: 0.3
+    parameters:
+      - name: classifier
+        weight: 0.5
+  - model: CAMeL-Lab/bert-base-arabic-camelbert-msa
+    weight: 0.25
+    parameters:
+      - name: encoder
+        weight: 0.4
+  - model: asafaya/bert-base-arabic
+    weight: 0.2
+    parameters:
+      - name: encoder
+        weight: 0.3
+  - model: aubmindlab/bert-base-arabertv2
+    weight: 0.15
+    parameters:
+      - name: classifier
+        weight: 0.2
+  - model: UBC-NLP/MARBERT
+    weight: 0.1
+    parameters:
+      - name: encoder
+        weight: 0.1
+
+merge_method: linear
+dtype: float16
