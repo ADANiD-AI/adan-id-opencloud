@@ -14,6 +14,9 @@ env:
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
 jobs:
+  # =============================================================================
+  # 1. BUILD & TEST
+  # =============================================================================
   build-test:
     runs-on: ubuntu-latest
     steps:
@@ -28,64 +31,148 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install huggingface-hub kaggle supabase
+          pip install huggingface-hub kaggle supabase mergekit
 
       - name: Run tests
         run: |
           python -m pytest tests/ --verbose
 
-  update-hf-dataset:
+  # =============================================================================
+  # 2. MERGE MODELS WITH MERGEKIT
+  # =============================================================================
+  merge-models:
     needs: build-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI and upload dataset
+      - name: Setup Python and MergeKit        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install MergeKit and dependencies
+        run: |
+          pip install mergekit torch transformers
+
+      - name: Merge Quranlab-AI models
+        run: |
+          mergekit-yaml models/mergekit.yaml ./merged-quranlab-ai --cuda
+
+      - name: Upload merged model to Hugging Face
         run: |
           pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
-          huggingface-cli upload ADANiD/Quranlab-islamic-dataset \
-            datasets/quranlab-islamic-dataset \
-            ./ \            --repo-type dataset
+          huggingface-cli upload ADANiD/Quranlab-AI \
+            ./merged-quranlab-ai \
+            ./ \
+            --repo-type model
 
-  update-hf-models:
-    needs: update-hf-dataset
+  # =============================================================================
+  # 3. UPDATE HUGGING FACE DATASET
+  # =============================================================================
+  update-hf-dataset:
+    needs: merge-models
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI and upload models
+      - name: Setup Hugging Face CLI
         run: |
           pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
+
+      - name: Upload dataset
+        run: |
+          huggingface-cli upload ADANiD/Quranlab-islamic-dataset \
+            datasets/quranlab-islamic-dataset \
+            ./ \
+            --repo-type dataset
+
+  # =============================================================================
+  # 4. UPDATE HUGGING FACE MODELS (QuranLab Core)
+  # =============================================================================
+  update-hf-models:
+    needs: update-hf-dataset
+    runs-on: ubuntu-latest
+    steps:      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Hugging Face CLI
+        run: |
+          pip install huggingface-hub
+          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
+
+      - name: Upload Quranlab model
+        run: |
           huggingface-cli upload ADANiD/Quranlab \
             models/quranlab/README.md \
             ./ \
             --repo-type model
-          huggingface-cli upload ADANiD/Quranlab-AI \
-            models/quranlab-ai/README.md \
-            ./ \
-            --repo-type model
 
-  update-kaggle:
+  # =============================================================================
+  # 5. UPLOAD DEMO FILES TO HUGGING FACE
+  # =============================================================================
+  upload-demo-files:
     needs: update-hf-models
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Kaggle CLI and update dataset
+      - name: Setup Hugging Face CLI
+        run: |
+          pip install huggingface-hub
+          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
+
+      - name: Upload demo notebook
+        run: |
+          huggingface-cli upload ADANiD/Quranlab-AI \
+            notebooks/quranlab-ai-demo.ipynb \
+            ./ \
+            --repo-type model
+
+      - name: Upload demo files for Space
+        run: |
+          huggingface-cli upload ADANiD/quranlab-demo \
+            demos/app.py \
+            ./ \
+            --repo-type space
+          huggingface-cli upload ADANiD/quranlab-demo \
+            demos/requirements.txt \
+            ./ \
+            --repo-type space
+          huggingface-cli upload ADANiD/quranlab-demo \
+            demos/README.md \
+            ./ \            --repo-type space
+
+  # =============================================================================
+  # 6. UPDATE KAGGLE DATASET
+  # =============================================================================
+  update-kaggle:
+    needs: upload-demo-files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Kaggle CLI
         run: |
           pip install kaggle
           mkdir -p ~/.kaggle
           echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
+
+      - name: Update Kaggle dataset
+        run: |
           kaggle datasets version \
             -p nooreabjad-dataset \
             -m "Auto-update: $(date)"
 
+  # =============================================================================
+  # 7. UPDATE SUPABASE SCHEMA
+  # =============================================================================
   update-supabase:
     needs: update-kaggle
     runs-on: ubuntu-latest
@@ -93,15 +180,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Supabase CLI and deploy schema
+      - name: Install Supabase CLI
         run: |
           npm install -g supabase
-          supabase db push \            --project-ref wcrchcdqaikhrhqzxfcy \
+
+      - name: Deploy database schema
+        run: |
+          supabase db push \
+            --project-ref wcrchcdqaikhrhqzxfcy \
             --api-key ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+  # =============================================================================
+  # 8. DEPLOY HUGGING FACE SPACE
+  # =============================================================================
   deploy-hf-space:
-    needs: update-supabase
-    runs-on: ubuntu-latest
+    needs: update-supabase    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -115,6 +208,9 @@ jobs:
             ./ \
             --repo-type space
 
+  # =============================================================================
+  # 9. NOTIFICATION
+  # =============================================================================
   notify:
     needs: deploy-hf-space
     runs-on: ubuntu-latest
@@ -122,3 +218,6 @@ jobs:
       - name: Send success notification
         run: |
           echo "✅ ADANiD Ecosystem auto-deployed successfully!"
+          echo "✅ Models merged with MergeKit"
+          echo "✅ Demo files uploaded"
+          echo "✅ All platforms updated"
