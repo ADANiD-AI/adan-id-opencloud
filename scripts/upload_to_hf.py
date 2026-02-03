@@ -1,10 +1,10 @@
-# Upload to Hugging Face
+# Upload to Hugging Face - Updated Version
 import os
 import subprocess
 
 def upload_to_hf():
     # Set HF token
-    os.environ["HF_TOKEN"] = ""
+    os.environ["HF_TOKEN"] = "hf_mmmmhfjjjnkdfjjjggkvhj"
     
     # Login
     subprocess.run(["huggingface-cli", "login", "--token", os.environ["HF_TOKEN"]])
