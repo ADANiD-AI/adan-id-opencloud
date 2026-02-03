@@ -31,25 +31,48 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install huggingface-hub kaggle supabase mergekit torch transformers librosa soundfile
+          pip install huggingface-hub kaggle supabase mergekit torch transformers librosa soundfile datasets
 
       - name: Run tests
         run: |
           python -m pytest tests/ --verbose
 
   # =============================================================================
-  # 2. MERGE MULTIMODAL MODEL
+  # 2. MIGRATE TO UNIVERSAL STANDARD
   # =============================================================================
-  merge-multimodal:
+  migrate-universal:
     needs: build-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python and MergeKit        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+      - name: Migrate models to universal standard        run: |
+          python scripts/migrate_models.py
+
+  # =============================================================================
+  # 3. TRAIN UNIVERSAL MODEL
+  # =============================================================================
+  train-universal:
+    needs: migrate-universal
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Train universal Islamic AI model
+        run: |
+          python scripts/train_universal.py
+
+  # =============================================================================
+  # 4. MERGE MULTIMODAL MODEL
+  # =============================================================================
+  merge-multimodal:
+    needs: train-universal
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install MergeKit and dependencies
         run: |
@@ -61,7 +84,6 @@ jobs:
 
       - name: Upload merged model to Hugging Face
         run: |
-          pip install huggingface-hub
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
           huggingface-cli upload ADANiD/multimodal-quranlab \
             ./merged-multimodal \
@@ -69,13 +91,12 @@ jobs:
             --repo-type model
 
   # =============================================================================
-  # 3. MERGE QURANLAB-AI MODEL
+  # 5. MERGE QURANLAB-AI MODEL
   # =============================================================================
   merge-quranlab-ai:
     needs: merge-multimodal
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
+    steps:      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Merge Quranlab-AI models
@@ -90,27 +111,42 @@ jobs:
             --repo-type model
 
   # =============================================================================
-  # 4. UPDATE HUGGING FACE DATASET
+  # 6. UPLOAD UNIVERSAL FOUNDATION MODEL
   # =============================================================================
-  update-hf-dataset:
+  upload-universal-model:
     needs: merge-quranlab-ai
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Setup Hugging Face CLI
+      - name: Upload Universal Islamic AI Foundation Model
         run: |
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
+          huggingface-cli upload ADANiD/islamic-ai-foundation \
+            models/islamic-ai-foundation \
+            ./ \
+            --repo-type model
+
+  # =============================================================================
+  # 7. UPDATE HUGGING FACE DATASET
+  # =============================================================================
+  update-hf-dataset:
+    needs: upload-universal-model
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Upload dataset
         run: |
+          huggingface-cli login --token ${{ secrets.HF_TOKEN }}
           huggingface-cli upload ADANiD/Quranlab-islamic-dataset \
             datasets/quranlab-islamic-dataset \
             ./ \
             --repo-type dataset
-
   # =============================================================================
-  # 5. UPDATE HUGGING FACE MODELS (QuranLab Core)
+  # 8. UPDATE HUGGING FACE MODELS (QuranLab Core)
   # =============================================================================
   update-hf-models:
     needs: update-hf-dataset
@@ -127,7 +163,7 @@ jobs:
             --repo-type model
 
   # =============================================================================
-  # 6. UPLOAD DEMO FILES TO HUGGING FACE
+  # 9. UPLOAD DEMO FILES TO HUGGING FACE
   # =============================================================================
   upload-demo-files:
     needs: update-hf-models
@@ -135,6 +171,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Upload universal demo notebook
+        run: |
+          huggingface-cli upload ADANiD/islamic-ai-foundation \
+            notebooks/universal-islamic-ai-demo.ipynb \
+            ./ \
+            --repo-type model
 
       - name: Upload multimodal demo notebook
         run: |
@@ -145,13 +188,13 @@ jobs:
 
       - name: Upload Quranlab-AI demo notebook
         run: |
-          huggingface-cli upload ADANiD/Quranlab-AI \            notebooks/quranlab-ai-demo.ipynb \
+          huggingface-cli upload ADANiD/Quranlab-AI \
+            notebooks/quranlab-ai-demo.ipynb \
             ./ \
             --repo-type model
 
       - name: Upload demo files for Space
-        run: |
-          huggingface-cli upload ADANiD/quranlab-demo \
+        run: |          huggingface-cli upload ADANiD/quranlab-demo \
             demos/app.py \
             ./ \
             --repo-type space
@@ -161,7 +204,7 @@ jobs:
             --repo-type space
 
   # =============================================================================
-  # 7. UPDATE KAGGLE RESOURCES
+  # 10. UPDATE KAGGLE RESOURCES
   # =============================================================================
   update-kaggle:
     needs: upload-demo-files
@@ -181,25 +224,25 @@ jobs:
         run: |
           kaggle datasets version \
             -p nooreabjad-dataset \
-            -m "feat: multimodal integration $(date)"
+            -m "feat: universal islamic ai integration $(date)"
 
       - name: Update Kaggle notebook
         run: |
           kaggle kernels push -p kaggle/nooreabjad-dataset/notebooks/
 
   # =============================================================================
-  # 8. UPDATE SUPABASE SCHEMA
+  # 11. UPDATE SUPABASE SCHEMA
   # =============================================================================
   update-supabase:
     needs: update-kaggle
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install Supabase CLI
         run: |
           npm install -g supabase
-
       - name: Deploy database schema
         run: |
           supabase db push \
@@ -207,7 +250,7 @@ jobs:
             --api-key ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   # =============================================================================
-  # 9. DEPLOY HUGGING FACE SPACE
+  # 12. DEPLOY HUGGING FACE SPACE
   # =============================================================================
   deploy-hf-space:
     needs: update-supabase
@@ -224,7 +267,7 @@ jobs:
             --repo-type space
 
   # =============================================================================
-  # 10. NOTIFICATION
+  # 13. NOTIFICATION
   # =============================================================================
   notify:
     needs: deploy-hf-space
@@ -233,6 +276,6 @@ jobs:
       - name: Send success notification
         run: |
           echo "✅ ADANiD Ecosystem auto-deployed successfully!"
-          echo "✅ Multimodal QuranLab deployed"
-          echo "✅ All Kaggle resources updated"
+          echo "✅ Universal Islamic AI Foundation Model deployed"
+          echo "✅ All models migrated to universal standard"
           echo "✅ All platforms synchronized"
