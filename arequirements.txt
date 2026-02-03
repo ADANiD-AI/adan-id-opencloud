@@ -4,6 +4,7 @@ transformers>=4.35
 librosa>=0.10
 soundfile>=0.12
 huggingface-hub>=0.20
+mergekit>=0.1.0
 
 # Database & APIs
 supabase>=2.0
@@ -12,6 +13,7 @@ kaggle>=1.6
 # Data Processing
 numpy>=1.21
 pandas>=1.3
+datasets>=2.14
 
 # Testing
 pytest>=7.0
