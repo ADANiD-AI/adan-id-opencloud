@@ -35,6 +35,6 @@ parameters:
 
 # Multimodal Capabilities:
 # - Audio recitation analysis
-# - Text classification
+# - Text classification  
 # - Abjad numerical validation
 # - Cross-modal attention fusion
