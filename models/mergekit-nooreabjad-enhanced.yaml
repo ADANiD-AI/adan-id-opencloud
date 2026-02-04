@@ -1,0 +1,33 @@
+# Noor-e-Abjad Enhanced Model Merge Configuration
+# Specialized for Abjad numerology and Islamic text validation
+
+models:
+  - model: ADANiD/islamic-ai-foundation
+    weight: 0.6
+    parameters:
+      - name: abjad_validator
+        weight: 0.9
+      - name: classifier
+        weight: 0.7
+  - model: aubmindlab/bert-base-arabertv2
+    weight: 0.25
+    parameters:
+      - name: encoder
+        weight: 0.5
+  - model: CAMeL-Lab/bert-base-arabic-camelbert-msa
+    weight: 0.15
+    parameters:
+      - name: encoder
+        weight: 0.4
+
+merge_method: linear
+dtype: float16
+parameters:
+  normalize: true
+  int8_mask: false
+
+# Specialized Features:
+# - High weight on Abjad validation (90%)
+# - Optimized for classical Arabic text
+# - Enhanced diacritics handling
+# - Jannah Points calculation support
