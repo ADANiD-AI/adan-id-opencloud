@@ -1,0 +1,44 @@
+# ADANiD Universal Merge Template v2.0
+# Compatible with all Islamic AI models including Noor-e-Abjad integration
+
+models:
+  - model: ADANiD/islamic-ai-foundation
+    weight: 0.5
+    parameters:
+      - name: classifier
+        weight: 0.6
+      - name: encoder
+        weight: 0.4
+  - model: aubmindlab/bert-base-arabertv2
+    weight: 0.25
+    parameters:
+      - name: encoder
+        weight: 0.5
+      - name: classifier  
+        weight: 0.3
+  - model: CAMeL-Lab/bert-base-arabic-camelbert-msa
+    weight: 0.15
+    parameters:
+      - name: encoder
+        weight: 0.4
+  - model: asafaya/bert-base-arabic
+    weight: 0.1
+    parameters:
+      - name: encoder
+        weight: 0.3
+
+merge_method: linear
+dtype: float16
+parameters:
+  normalize: true
+  int8_mask: false
+
+# Usage Instructions:
+# 1. For Noor-e-Abjad enhanced merging:
+#    Replace aubmindlab/bert-base-arabertv2 with adnanmd76/nooreabjad-enhanced
+#
+# 2. For Multimodal QuranLab integration:
+#    Add ADANiD/multimodal-quranlab with weight 0.1
+#
+# 3. Custom model integration:
+#    Replace any model with your custom model path
