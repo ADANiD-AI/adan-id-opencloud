@@ -1,0 +1,40 @@
+# Multimodal Islamic AI Merge Configuration
+# Audio + Text + Numerical integration
+
+models:
+  - model: ADANiD/islamic-ai-foundation
+    weight: 0.35
+    parameters:
+      - name: classifier
+        weight: 0.6
+      - name: abjad_validator
+        weight: 0.8
+  - model: ADANiD/multimodal-quranlab
+    weight: 0.3
+    parameters:
+      - name: audio_encoder
+        weight: 0.7
+      - name: text_encoder
+        weight: 0.5
+  - model: aubmindlab/bert-base-arabertv2
+    weight: 0.2
+    parameters:
+      - name: encoder
+        weight: 0.4
+  - model: CAMeL-Lab/bert-base-arabic-camelbert-msa
+    weight: 0.15
+    parameters:
+      - name: encoder
+        weight: 0.3
+
+merge_method: linear
+dtype: float16
+parameters:
+  normalize: true
+  int8_mask: false
+
+# Multimodal Capabilities:
+# - Audio recitation analysis
+# - Text classification
+# - Abjad numerical validation
+# - Cross-modal attention fusion
