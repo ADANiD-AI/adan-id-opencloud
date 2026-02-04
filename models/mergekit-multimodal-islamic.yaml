@@ -2,7 +2,7 @@
 # Audio + Text + Numerical integration
 
 models:
-  - model: ADANiD/islamic-ai-foundation
+  - model: adnanmd76/islamic-ai-foundation
     weight: 0.35
     parameters:
       - name: classifier
@@ -35,6 +35,6 @@ parameters:
 
 # Multimodal Capabilities:
 # - Audio recitation analysis
-# - Text classification  
+# - Text classification
 # - Abjad numerical validation
 # - Cross-modal attention fusion
