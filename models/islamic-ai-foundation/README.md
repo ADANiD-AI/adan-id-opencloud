@@ -19,7 +19,7 @@ tags:
 - jannah-points
 ---
 
-# 🌙 ADANiD Islamic AI Foundation Model
+# 🌙 Islamic AI Foundation Model
 
 > **World's first foundation model for comprehensive Islamic knowledge processing with Noor-e-Abjad integration**
 
@@ -37,8 +37,8 @@ tags:
 ```python
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-model = AutoModelForSequenceClassification.from_pretrained("ADANiD/islamic-ai-foundation")
-tokenizer = AutoTokenizer.from_pretrained("ADANiD/islamic-ai-foundation")
+model = AutoModelForSequenceClassification.from_pretrained("adnanmd76/islamic-ai-foundation")
+tokenizer = AutoTokenizer.from_pretrained("adnanmd76/islamic-ai-foundation")
 ```
 
 ### For Fine-tuning with Noor-e-Abjad Dataset
@@ -47,8 +47,7 @@ from datasets import load_dataset
 
 # Load Noor-e-Abjad dataset
 dataset = load_dataset("adnanmd76/nooreabjad-dataset")
-# Your fine-tuning code here
-from transformers import Trainer, TrainingArguments
+# Your fine-tuning code herefrom transformers import Trainer, TrainingArguments
 
 training_args = TrainingArguments(
     output_dir="./nooreabjad-finetuned",
@@ -66,9 +65,9 @@ trainer = Trainer(
 
 ### For Merging with Other Models
 ```yaml
-# mergekit-template.yaml
+# mergekit-multimodal-islamic.yaml
 models:
-  - model: ADANiD/islamic-ai-foundation
+  - model: adnanmd76/islamic-ai-foundation
     weight: 0.6
     parameters:
       - name: classifier
@@ -96,8 +95,8 @@ async def validate_abjad(text: str):
 ```
 
 ## 🔗 Ecosystem Integration
-- **Kaggle Dataset**: [nooreabjad-dataset](https://www.kaggle.com/datasets/adnanmd76/nooreabjad-dataset)- **GitHub Repository**: [adan-id-opencloud](https://github.com/ADANiD-AI/adan-id-opencloud)
-- **Hugging Face Dataset**: [Quranlab-islamic-dataset](https://huggingface.co/datasets/ADANiD/Quranlab-islamic-dataset)
+- **Kaggle Dataset**: [nooreabjad-dataset](https://www.kaggle.com/datasets/adnanmd76/nooreabjad-dataset)
+- **GitHub Repository**: [adan-id-opencloud](https://github.com/ADANiD-AI/adan-id-opencloud)- **Hugging Face Dataset**: [Quranlab-islamic-dataset](https://huggingface.co/datasets/ADANiD/Quranlab-islamic-dataset)
 - **Live Demo**: [Quranlab Demo Space](https://huggingface.co/spaces/ADANiD/quranlab-demo)
 
 ## 🔒 ADANiD Proprietary License
