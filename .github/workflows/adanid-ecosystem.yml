@@ -80,12 +80,12 @@ jobs:
 
       - name: Merge Multimodal QuranLab
         run: |
-          mergekit-yaml models/mergekit-multimodal.yaml ./merged-multimodal --cuda
+          mergekit-yaml models/mergekit-multimodal-islamic.yaml ./merged-multimodal --cuda
 
       - name: Upload merged model to Hugging Face
         run: |
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
-          huggingface-cli upload ADANiD/multimodal-quranlab \
+          huggingface-cli upload ADANiD/multimodal-islamic-ai \
             ./merged-multimodal \
             ./ \
             --repo-type model
@@ -101,7 +101,7 @@ jobs:
 
       - name: Merge Quranlab-AI models
         run: |
-          mergekit-yaml models/mergekit.yaml ./merged-quranlab-ai --cuda
+          mergekit-yaml models/mergekit-quranlab-ai.yaml ./merged-quranlab-ai --cuda
 
       - name: Upload merged model to Hugging Face
         run: |
@@ -111,10 +111,31 @@ jobs:
             --repo-type model
 
   # =============================================================================
-  # 6. UPLOAD UNIVERSAL FOUNDATION MODEL
+  # 6. MERGE NOOREABJAD ENHANCED MODEL
+  # =============================================================================
+  merge-nooreabjad:
+    needs: merge-quranlab-ai
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Merge Noor-e-Abjad Enhanced Model
+        run: |
+          mergekit-yaml models/mergekit-nooreabjad-enhanced.yaml ./merged-nooreabjad --cuda
+
+      - name: Upload merged model to Hugging Face
+        run: |
+          huggingface-cli upload ADANiD/nooreabjad-enhanced \
+            ./merged-nooreabjad \
+            ./ \
+            --repo-type model
+
+  # =============================================================================
+  # 7. UPLOAD UNIVERSAL FOUNDATION MODEL
   # =============================================================================
   upload-universal-model:
-    needs: merge-quranlab-ai
+    needs: merge-nooreabjad
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -124,12 +145,11 @@ jobs:
         run: |
           huggingface-cli login --token ${{ secrets.HF_TOKEN }}
           huggingface-cli upload ADANiD/islamic-ai-foundation \
-            models/islamic-ai-foundation \
-            ./ \
+            models/islamic-ai-foundation \            ./ \
             --repo-type model
 
   # =============================================================================
-  # 7. UPDATE HUGGING FACE DATASET
+  # 8. UPDATE HUGGING FACE DATASET
   # =============================================================================
   update-hf-dataset:
     needs: upload-universal-model
@@ -145,8 +165,9 @@ jobs:
             datasets/quranlab-islamic-dataset \
             ./ \
             --repo-type dataset
+
   # =============================================================================
-  # 8. UPDATE HUGGING FACE MODELS (QuranLab Core)
+  # 9. UPDATE HUGGING FACE MODELS (QuranLab Core)
   # =============================================================================
   update-hf-models:
     needs: update-hf-dataset
@@ -163,7 +184,7 @@ jobs:
             --repo-type model
 
   # =============================================================================
-  # 9. UPLOAD DEMO FILES TO HUGGING FACE
+  # 10. UPLOAD DEMO FILES TO HUGGING FACE
   # =============================================================================
   upload-demo-files:
     needs: update-hf-models
@@ -173,16 +194,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Upload universal demo notebook
-        run: |
-          huggingface-cli upload ADANiD/islamic-ai-foundation \
+        run: |          huggingface-cli upload ADANiD/islamic-ai-foundation \
             notebooks/universal-islamic-ai-demo.ipynb \
             ./ \
             --repo-type model
 
       - name: Upload multimodal demo notebook
         run: |
-          huggingface-cli upload ADANiD/multimodal-quranlab \
-            notebooks/multimodal-quranlab-demo.ipynb \
+          huggingface-cli upload ADANiD/multimodal-islamic-ai \
+            notebooks/multimodal-islamic-ai-demo.ipynb \
+            ./ \
+            --repo-type model
+
+      - name: Upload Noor-e-Abjad demo notebook
+        run: |
+          huggingface-cli upload ADANiD/nooreabjad-enhanced \
+            notebooks/nooreabjad-demo.ipynb \
             ./ \
             --repo-type model
 
@@ -194,7 +221,8 @@ jobs:
             --repo-type model
 
       - name: Upload demo files for Space
-        run: |          huggingface-cli upload ADANiD/quranlab-demo \
+        run: |
+          huggingface-cli upload ADANiD/quranlab-demo \
             demos/app.py \
             ./ \
             --repo-type space
@@ -204,7 +232,7 @@ jobs:
             --repo-type space
 
   # =============================================================================
-  # 10. UPDATE KAGGLE RESOURCES
+  # 11. UPDATE KAGGLE RESOURCES
   # =============================================================================
   update-kaggle:
     needs: upload-demo-files
@@ -215,8 +243,7 @@ jobs:
 
       - name: Setup Kaggle CLI
         run: |
-          pip install kaggle
-          mkdir -p ~/.kaggle
+          pip install kaggle          mkdir -p ~/.kaggle
           echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
@@ -224,14 +251,14 @@ jobs:
         run: |
           kaggle datasets version \
             -p nooreabjad-dataset \
-            -m "feat: universal islamic ai integration $(date)"
+            -m "feat: universal islamic ai integration with enhanced abjad validation $(date)"
 
       - name: Update Kaggle notebook
         run: |
           kaggle kernels push -p kaggle/nooreabjad-dataset/notebooks/
 
   # =============================================================================
-  # 11. UPDATE SUPABASE SCHEMA
+  # 12. UPDATE SUPABASE SCHEMA
   # =============================================================================
   update-supabase:
     needs: update-kaggle
@@ -243,6 +270,7 @@ jobs:
       - name: Install Supabase CLI
         run: |
           npm install -g supabase
+
       - name: Deploy database schema
         run: |
           supabase db push \
@@ -250,7 +278,7 @@ jobs:
             --api-key ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   # =============================================================================
-  # 12. DEPLOY HUGGING FACE SPACE
+  # 13. DEPLOY HUGGING FACE SPACE
   # =============================================================================
   deploy-hf-space:
     needs: update-supabase
@@ -265,9 +293,8 @@ jobs:
             spaces/quranlab-demo \
             ./ \
             --repo-type space
-
   # =============================================================================
-  # 13. NOTIFICATION
+  # 14. NOTIFICATION
   # =============================================================================
   notify:
     needs: deploy-hf-space
@@ -278,4 +305,6 @@ jobs:
           echo "✅ ADANiD Ecosystem auto-deployed successfully!"
           echo "✅ Universal Islamic AI Foundation Model deployed"
           echo "✅ All models migrated to universal standard"
+          echo "✅ Noor-e-Abjad Enhanced Model integrated"
+          echo "✅ Multimodal Islamic AI deployed"
           echo "✅ All platforms synchronized"
