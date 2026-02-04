@@ -31,5 +31,19 @@
   },
   "adanid_version": "1.0",
   "islamic_compliance": true,
-  "supported_languages": ["ar", "ur", "en"]
+  "supported_languages": ["ar", "ur", "en"],
+  "features": {
+    "abjad_validation": true,
+    "tajweed_correction": true,
+    "jannah_points": true,
+    "multilingual_qa": true,
+    "ethical_filtering": true
+  },
+  "integration": {
+    "kaggle_datasets": ["adnanmd76/nooreabjad-dataset"],
+    "huggingface_datasets": ["ADANiD/Quranlab-islamic-dataset"],
+    "github_repos": ["ADANiD-AI/adan-id-opencloud"]
+  },
+  "license": "adanid-proprietary",
+  "ethical_guidelines": "quranic-principles"
 }
