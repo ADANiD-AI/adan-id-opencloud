@@ -1,5 +1,5 @@
 {
-  "_name_or_path": "ADANiD/islamic-ai-foundation",
+  "_name_or_path": "adnanmd76/islamic-ai-foundation",
   "architectures": ["BertForSequenceClassification"],
   "model_type": "bert",
   "hidden_size": 768,
