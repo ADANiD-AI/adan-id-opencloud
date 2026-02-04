@@ -1,0 +1,20 @@
+{
+  "quranflow": {
+    "integration": {
+      "auth_service": "/auth/biometric",
+      "storage_service": "/storage",
+      "vault_service": "/vault/abjad"
+    },
+    "security": {
+      "encryption": "AES-256-GCM",
+      "entropy_source": "quranic-abjad",
+      "biometric_required": true
+    },
+    "features": {
+      "voice_dictation": true,
+      "tajweed_correction": true,
+      "abjad_validation": true,
+      "jannah_points": true
+    }
+  }
+}
