@@ -1,0 +1,31 @@
+{
+  "offline_mode": {
+    "enabled": true,
+    "local_models_path": "./offline/local_models",
+    "local_datasets_path": "./offline/local_datasets",
+    "cache_enabled": true,
+    "cache_path": "./offline/offline_cache"
+  },
+  "services": {
+    "auth": {
+      "offline_endpoint": "/auth/biometric/offline",
+      "local_did_storage": "./offline/did_registry.json"
+    },
+    "storage": {
+      "offline_endpoint": "/storage/offline",
+      "local_storage_path": "./offline/local_storage"
+    },
+    "vault": {
+      "offline_endpoint": "/vault/abjad/offline",
+      "quranic_entropy_source": "./offline/quranic_entropy.txt"
+    }
+  },
+  "models": {
+    "abjad_whisper": "offline/local_models/abjad-whisper",
+    "islamic_ai_foundation": "offline/local_models/islamic-ai-foundation"
+  },
+  "datasets": {
+    "quranlab_dataset": "offline/local_datasets/quranlab-islamic-dataset",
+    "nooreabjad_dataset": "offline/local_datasets/nooreabjad-dataset"
+  }
+}
