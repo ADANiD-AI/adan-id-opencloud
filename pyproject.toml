@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adanid-cli"
+version = "1.0.0"
+description = "Quranic AI Terminal Agent"
+readme = "README.md"
+authors = [{name = "Muhammad Adnan Ul Mustafa", email = "adnanmd76@gmail.com"}]
+license = {file = "LICENSE"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "click>=8.0",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+    "transformers>=4.35",
+    "torch>=2.0",
+]
+
+[project.scripts]
+adanid = "adanid_cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/ADANiD-AI/adan-id-opencloud"
+Documentation = "https://github.com/ADANiD-AI/adan-id-opencloud/blob/main/README.md"
+Repository = "https://github.com/ADANiD-AI/adan-id-opencloud"
