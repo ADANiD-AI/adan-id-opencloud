@@ -1,0 +1,6 @@
+# railway.toml
+[build]
+builder = "pip"
+
+[deploy]
+startCommand = "python app.py"
