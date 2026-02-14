@@ -1,0 +1,35 @@
+{
+  "name": "@adanid/cli",
+  "version": "1.0.0",
+  "description": "Quranic AI Terminal Agent",
+  "main": "dist/index.js",
+  "bin": {
+    "adanid": "./bin/adanid"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "quranic-ai",
+    "islamic-ai",
+    "terminal",
+    "cli",
+    "abjad-calculator",
+    "tajweed-validator"
+  ],
+  "author": "Muhammad Adnan Ul Mustafa <adnanmd76@gmail.com>",
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "inquirer": "^9.2.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0"
+  }
+}
